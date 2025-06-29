@@ -1,4 +1,19 @@
+import torch
+
+
+orig_torch_load = torch.load
+def patched_load(file, *args, **kwargs):
+    kwargs["weights_only"] = False
+    return orig_torch_load(file, *args, **kwargs)
+torch.load = patched_load
+# --------------------------------------------------
+
 from ultralytics import YOLO
+
+MODEL = YOLO("yolov8n.pt")
+
+
+
 from PIL import Image
 import openai, os, json, textwrap, torch.serialization
 from ultralytics.nn.tasks import DetectionModel
@@ -6,7 +21,7 @@ from ultralytics.nn.tasks import DetectionModel
 # Prevent PyTorch 2.7 “weights_only” unpickling error
 torch.serialization.add_safe_globals({'ultralytics.nn.tasks.DetectionModel': DetectionModel})
 
-MODEL = YOLO("yolov8n.pt")   # auto‑downloads on first run
+
 
 LABEL_MAP = {
     "banana": "banana",
