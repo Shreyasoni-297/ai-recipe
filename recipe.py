@@ -5,48 +5,12 @@ from PIL import Image
 from typing import Dict, List
 
 # ---------------- Dummy backend ----------------
-def generate_recipes(img: Image.Image, filters: Dict[str, str]) -> List[Dict]:
-    """Return hard-coded recipes; swap with real model later."""
-    return [
-        {
-            "title": "Cheesy Veg Sandwich",
-            "diet": filters["diet"],
-            "cuisine": filters["cuisine"],
-            "cook_time": filters["cook_time"],
-            "ingredients": [
-                "2 bread slices",
-                "1 slice cheese",
-                "Chopped tomato",
-                "Chopped onion",
-                "Butter",
-            ],
-            "instructions": [
-                "Spread butter on bread.",
-                "Add cheese and veggies.",
-                "Grill or toast till golden.",
-                "Serve hot with ketchup.",
-            ],
-        },
-        {
-            "title": "Quick Egg Fried Rice",
-            "diet": filters["diet"],
-            "cuisine": "Chinese",
-            "cook_time": "<30 min",
-            "ingredients": [
-                "1 cup cooked rice",
-                "2 eggs",
-                "Soy sauce",
-                "Chopped spring onion",
-                "Salt & pepper",
-            ],
-            "instructions": [
-                "Scramble eggs in a pan.",
-                "Add rice and soy sauce.",
-                "Mix well with veggies.",
-                "Garnish with spring onion.",
-            ],
-        },
-    ]
+from backend import detect_ingredients, recipe_from_llm
+
+def generate_recipes(img, filters):
+    ingredients = detect_ingredients(img)
+    recipe = recipe_from_llm(ingredients, filters)
+    return [recipe]
 
 # ---------------- UI ----------------
 def main() -> None:
