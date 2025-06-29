@@ -1,3 +1,7 @@
+import torch, torch.serialization as ts
+from ultralytics.nn.tasks import DetectionModel
+ts.add_safe_globals({'ultralytics.nn.tasks.DetectionModel': DetectionModel})
+
 import openai, os, json, random
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
