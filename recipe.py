@@ -1,31 +1,49 @@
 import streamlit as st
 from PIL import Image
-from src.backend import  detect_ingredients, recipe_from_llm
+from backend import detect_ingredients, recipe_from_llm
 
-def main():
-    st.title("📸🍽️ AI‑Powered Recipe Generator")
-    up = st.file_uploader("Upload fridge / pantry photo", type=["jpg","jpeg","png"])
-    if up:
-        img = Image.open(up)
-        st.image(img, caption="Your image", use_column_width=True)
 
-        diet    = st.selectbox("Diet", ["Any","Vegetarian","Vegan","Keto"])
-        cuisine = st.selectbox("Cuisine", ["Any","Indian","Italian","Mexican"])
-        time    = st.selectbox("Cook time", ["Any","<15 min","<30 min","<45 min"])
-
-        if st.button("Generate Recipe"):
-            with st.spinner("Detecting ingredients & talking to GPT..."):
+def main() -> None:
+    if st.button("Generate Recipe"):
+            with st.spinner("Detecting ingredients & chatting with GPT..."):
                 ingr = detect_ingredients(img)
-                rec  = recipe_from_llm(ingr, {"diet":diet,"cuisine":cuisine,"time":time})
-            st.success(rec["title"])
-            st.markdown("**Ingredients**")
-            st.markdown("\n".join(f"- {x}" for x in rec["ingredients"]))
-            st.markdown("**Instructions**")
-            st.markdown("\n".join(f"{i+1}. {s}" for i,s in enumerate(rec["instructions"])))
+                rec = recipe_from_llm(
+                    ingr,
+                    {"diet": diet, "cuisine": cuisine, "time": cook_time},
+                )
+    st.set_page_config(page_title="AI Recipe Generator", page_icon="🍳", layout="centered")
+    st.title("📸🍽️ AI-Powered Recipe Generator")
 
-if __name__ == "__main__":
-    main()
+    uploaded = st.file_uploader("Upload your fridge / pantry photo", type=["jpg", "jpeg", "png"])
+    if uploaded:
+        img = Image.open(uploaded)
+        st.image(img, caption="Uploaded image", use_column_width=True)
 
+        st.subheader("Filters")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            diet = st.selectbox("Diet", ["Any", "Vegetarian", "Vegan", "Keto", "Pescatarian", "Gluten-Free"])
+        with col2:
+            cuisine = st.selectbox("Cuisine", ["Any", "Indian", "Italian", "Mexican", "Chinese", "Mediterranean"])
+        with col3:
+            cook_time = st.selectbox("Cook time", ["Any", "<15 min", "<30 min", "<45 min", "1 hour+"])
+
+        if st.button("Generate Recipes", type="primary"):
+            with st.spinner("Chef-bot is thinking…"):
+                recs = generate_recipes(img, {"diet": diet, "cuisine": cuisine, "cook_time": cook_time})
+
+            if not recs:
+                st.warning("No recipes found — try relaxing a filter.")
+            else:
+                st.success(f"{len(recs)} recipe{'s' if len(recs)>1 else ''} found!")
+                show_recipes(recs)
+
+        if st.session_state.get("favourites"):
+            st.divider()
+            st.subheader("⭐ Saved favourites")
+            show_recipes(st.session_state["favourites"], favourite=True)
+    else:
+        st.info("👆 Upload an image to start.")
 
 def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
     for i, r in enumerate(recs):
@@ -46,4 +64,4 @@ def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
             st.markdown("**Ingredients**")
             st.markdown("\n".join(f"- {ing}" for ing in r["ingredients"]))
             st.markdown("**Instructions**")
-            st.markdown("\n".join(f"{j+1}. {step}" for j, step in enumerate(r["instructions"])))                  
+            st.markdown("\n".join(f"{j+1}. {step}" for j, step in enumerate(r["instructions"])))

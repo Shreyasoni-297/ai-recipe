@@ -1,24 +1,45 @@
-import torch, torch.serialization as ts
-from ultralytics.nn.tasks import DetectionModel
-ts.add_safe_globals({'ultralytics.nn.tasks.DetectionModel': DetectionModel})
-
-import openai, os, json, random
+import base64, io, json, os
+import openai
+from PIL import Image
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# ------------- TEMP: random ingredients -------------
-def detect_ingredients(_img):
-    sample = [
-        ["milk", "eggs", "cheese"],
-        ["apple", "banana"],
-        ["bread", "tomato", "cheese"],
-        ["yogurt", "broccoli", "carrot"],
-    ]
-    return random.choice(sample)
-# ----------------------------------------------------
+# ---------- Ingredient detection with GPT-4o Vision ----------
+def detect_ingredients(img: Image.Image):
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
-SYSTEM = ("You are a chef. Return ONE JSON dict with keys: "
-          "title, ingredients(list), instructions(list).")
+    vision_prompt = [
+        {
+            "type": "text",
+            "text": (
+                "You are a food AI. List the visible edible ingredients "
+                "you can clearly recognise in this photo (simple nouns, comma-separated)."
+            ),
+        },
+        {
+            "type": "image_url",
+            "image_url": f"data:image/jpeg;base64,{b64}",
+        },
+    ]
+
+    rsp = openai.ChatCompletion.create(
+        model="gpt-4o-vision-preview",
+        messages=[{"role": "user", "content": vision_prompt}],
+        max_tokens=100,
+    )
+
+    raw = rsp.choices[0].message.content.strip()
+    # e.g. "Ingredients: milk, eggs, broccoli"
+    line = raw.split(":")[-1] if ":" in raw else raw
+    return [x.strip().lower() for x in line.split(",") if x.strip()]
+
+# ---------- Recipe generation with GPT ----------
+SYSTEM = (
+    "You are a chef. Return ONE JSON object with keys: "
+    "title, ingredients (list), instructions (list)."
+)
 
 def recipe_from_llm(ingredients, opts):
     user = (
@@ -26,11 +47,15 @@ def recipe_from_llm(ingredients, opts):
         f"Diet: {opts['diet']}. Cuisine: {opts['cuisine']}. "
         f"Time: {opts['time']}."
     )
+
     rsp = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[{"role":"system","content":SYSTEM},
-                  {"role":"user","content":user}],
-        temperature=0.7
+        temperature=0.7,
+        messages=[
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": user},
+        ],
     )
     return json.loads(rsp.choices[0].message.content)
+
 
