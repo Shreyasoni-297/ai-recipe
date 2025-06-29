@@ -1,3 +1,7 @@
+import torch, ultralytics.nn.tasks as tasks
+torch.serialization.add_safe_globals([tasks.DetectionModel])
+from ultralytics import YOLO
+
 import base64, io, json, os
 import openai
 from PIL import Image
@@ -57,5 +61,3 @@ def recipe_from_llm(ingredients, opts):
         ],
     )
     return json.loads(rsp.choices[0].message.content)
-
-
