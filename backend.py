@@ -7,7 +7,8 @@ client = OpenAI(
     api_key  = st.secrets["OPENAI_API_KEY"],
     project  = st.secrets["OPENAI_PROJECT"],   
 )
-response = openai.models.list()
+response = client.models.list()     
+
 st.write("✅ Success!" if response else "❌ Failed")
 from torch.serialization import add_safe_globals
 from ultralytics.nn.tasks import DetectionModel
@@ -39,7 +40,7 @@ import openai
 from PIL import Image
 from io import BytesIO
 
-openai.api_key =st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+#openai.api_key =st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 # ---------- Ingredient detection with GPT-4o Vision ----------
 def detect_ingredients(img: Image.Image):
