@@ -7,7 +7,7 @@ client = OpenAI(
     api_key  = st.secrets["OPENAI_API_KEY"],
     project  = st.secrets["OPENAI_PROJECT"],   
 )
-response = client.models.list()     
+#response = client.models.list()     
 
 st.write("✅ Success!" if response else "❌ Failed")
 from torch.serialization import add_safe_globals
