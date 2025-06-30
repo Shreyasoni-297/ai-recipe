@@ -9,7 +9,7 @@ client = OpenAI(
 )
 #response = client.models.list()     
 
-st.write("✅ Success!" if response else "❌ Failed")
+#st.write("✅ Success!" if response else "❌ Failed")
 from torch.serialization import add_safe_globals
 from ultralytics.nn.tasks import DetectionModel
 add_safe_globals([DetectionModel])
