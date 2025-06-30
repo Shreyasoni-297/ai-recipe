@@ -1,10 +1,11 @@
-import openai
+from openai import OpenAI
 import streamlit as st
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 from torch.serialization import add_safe_globals
 from ultralytics.nn.tasks import DetectionModel
 add_safe_globals([DetectionModel])
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 import torch
 from functools import partial
@@ -31,7 +32,7 @@ import openai
 from PIL import Image
 from io import BytesIO
 
-openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+openai.api_key =st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 # ---------- Ingredient detection with GPT-4o Vision ----------
 def detect_ingredients(img: Image.Image):
@@ -54,7 +55,7 @@ def detect_ingredients(img: Image.Image):
         },
     ]
 
-    rsp = openai.ChatCompletion.create(
+    rsp = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": vision_prompt}],
         max_tokens=60,
