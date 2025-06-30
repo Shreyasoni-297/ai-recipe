@@ -1,51 +1,80 @@
-import torch, ultralytics.nn.tasks as tasks
-torch.serialization.add_safe_globals([tasks.DetectionModel])
-from ultralytics import YOLO
+import openai
+import streamlit as st
 
-import base64, io, json, os
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+from torch.serialization import add_safe_globals
+from ultralytics.nn.tasks import DetectionModel
+add_safe_globals([DetectionModel])
+
+import torch
+from functools import partial
+
+_orig_load = torch.load
+def _patched_load(*args, **kwargs):
+    kwargs.setdefault("weights_only", False)   # force full pickle load
+    return _orig_load(*args, **kwargs)
+
+torch.load = _patched_load
+# ---------------------------------------------------------------
+
+from ultralytics import YOLO
+model = YOLO("yolov8n.pt")
+
+
+
+from ultralytics import YOLO
+model = YOLO("yolov8n.pt")         
+
+
+import base64, json, os
 import openai
 from PIL import Image
+from io import BytesIO
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 # ---------- Ingredient detection with GPT-4o Vision ----------
 def detect_ingredients(img: Image.Image):
-    buf = io.BytesIO()
+    buf = BytesIO()
     img.save(buf, format="JPEG", quality=85)
+    img_bytes = buf.getvalue()
+
     b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
     vision_prompt = [
         {
             "type": "text",
-            "text": (
+            "text": 
                 "You are a food AI. List the visible edible ingredients "
                 "you can clearly recognise in this photo (simple nouns, comma-separated)."
-            ),
         },
         {
             "type": "image_url",
-            "image_url": f"data:image/jpeg;base64,{b64}",
+            "image_url": {"url":f"data:image/jpeg;base64,{b64}"}
         },
     ]
 
     rsp = openai.ChatCompletion.create(
-        model="gpt-4o-vision-preview",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": vision_prompt}],
-        max_tokens=100,
+        max_tokens=60,
     )
 
     raw = rsp.choices[0].message.content.strip()
-    # e.g. "Ingredients: milk, eggs, broccoli"
+
     line = raw.split(":")[-1] if ":" in raw else raw
     return [x.strip().lower() for x in line.split(",") if x.strip()]
 
-# ---------- Recipe generation with GPT ----------
+
 SYSTEM = (
     "You are a chef. Return ONE JSON object with keys: "
     "title, ingredients (list), instructions (list)."
 )
 
 def recipe_from_llm(ingredients, opts):
+    SYSTEM = ("You are a chef. Return ONE JSON with keys: "
+              "title, ingredients(list), instructions(list).")
+
     user = (
         f"Ingredients: {', '.join(ingredients)}. "
         f"Diet: {opts['diet']}. Cuisine: {opts['cuisine']}. "
@@ -53,7 +82,7 @@ def recipe_from_llm(ingredients, opts):
     )
 
     rsp = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         temperature=0.7,
         messages=[
             {"role": "system", "content": SYSTEM},
