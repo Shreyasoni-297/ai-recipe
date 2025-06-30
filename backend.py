@@ -2,6 +2,13 @@ from openai import OpenAI
 import streamlit as st
 
 #openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+#openai.organization = st.secrets.get("OPENAI_PROJECT") or os.getenv("OPENAI_PROJECT")
+client = OpenAI(
+    api_key  = st.secrets["OPENAI_API_KEY"],
+    project  = st.secrets["OPENAI_PROJECT"],   
+)
+response = openai.models.list()
+st.write("✅ Success!" if response else "❌ Failed")
 from torch.serialization import add_safe_globals
 from ultralytics.nn.tasks import DetectionModel
 add_safe_globals([DetectionModel])
