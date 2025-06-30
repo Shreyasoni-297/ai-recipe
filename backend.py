@@ -1,7 +1,7 @@
 from openai import OpenAI
 import streamlit as st
 
-openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+#openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 from torch.serialization import add_safe_globals
 from ultralytics.nn.tasks import DetectionModel
 add_safe_globals([DetectionModel])
@@ -82,12 +82,12 @@ def recipe_from_llm(ingredients, opts):
         f"Time: {opts['time']}."
     )
 
-    rsp = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        temperature=0.7,
-        messages=[
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": user},
+    rsp = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    temperature=0.7,
+    messages=[
+        {"role": "system", "content": SYSTEM},
+        {"role": "user",   "content": user},
         ],
     )
     return json.loads(rsp.choices[0].message.content)
