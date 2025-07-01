@@ -4,6 +4,7 @@ from __future__ import annotations
 import streamlit as st
 from PIL import Image
 from typing import List, Dict
+import json, re
 
 # ---------------- Dummy backend ----------------
 from backend import detect_ingredients, recipe_from_llm
@@ -67,25 +68,42 @@ def main() -> None:
 
 def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
     for i, r in enumerate(recs):
-        with st.expander(f"🍽️  {r['title']}"):
+        # --- Safe defaults in case keys are missing ---
+        if not isinstance(r, dict):
+            st.warning(f"Unexpected recipe format: {r}")
+            continue
+
+        title   = r.get("title",  "Untitled Recipe")
+        diet    = r.get("diet",   "Any")
+        cuisine = r.get("cuisine", "Any")
+        ctime   = r.get("cook_time", "Unknown")
+        ings    = r.get("ingredients", [])
+        steps   = r.get("instructions", [])
+
+        with st.expander(f"🍽️  {title}"):
             c1, c2, c3 = st.columns([2, 1, 1])
             with c1:
-                st.markdown(f"*Diet:* {r['diet']}")
-                st.markdown(f"*Cuisine:* {r['cuisine']}")
-                st.markdown(f"*Time:* {r['cook_time']}")
+                st.markdown(f"*Diet:* {diet}")
+                st.markdown(f"*Cuisine:* {cuisine}")
+                st.markdown(f"*Time:* {ctime}")
             with c2:
-                rating = st.slider("Rate", 1, 5, 3, key=f"rating_{i}_{favourite}")
-                st.session_state.setdefault("ratings", {})[r["title"]] = rating
+                rating = st.slider("Rate", 1, 5, 3,
+                                   key=f"rating_{i}_{favourite}")
+                st.session_state.setdefault("ratings", {})[title] = rating
             with c3:
                 fav_key = f"fav_{i}_{favourite}"
-                if st.checkbox("❤️ Save", key=fav_key):
+                if st.checkbox("❤️ Save", key=fav_key):
                     st.session_state.setdefault("favourites", []).append(r)
 
-            st.markdown("*Ingredients*")
-            st.markdown("\n".join(f"- {ing}" for ing in r["ingredients"]))
-            st.markdown("*Instructions*")
-            st.markdown("\n".join(f"{j+1}. {step}" for j, step in enumerate(r["instructions"])))
+            st.markdown("**Ingredients**")
+            for ing in ings:
+                st.markdown(f"- {ing}")
 
+            st.markdown("**Instructions**")
+            for j, step in enumerate(steps):
+                st.markdown(f"{j+1}. {step}")
+
+
+# --------------- Run the app ---------------------
 if __name__ == "__main__":
-    print("App is running correctly!")
     main()

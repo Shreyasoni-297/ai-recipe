@@ -3,13 +3,19 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 
-HF_MODEL = "google/flan-t5-base"            # lightweight, totally free
+
+
+HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"  
 
 
 # ---------- YOUR free HF token ----------
-HF_TOKEN = st.secrets["HF_API_KEY"]
+HF_TOKEN = st.secrets.get("HF_API_KEY", "")
+if not HF_TOKEN:
+    st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
+else:
+    st.write("DEBUG token prefix:", HF_TOKEN[:10])
 
-HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1" 
+
 st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 def call_hf(prompt: str, max_tokens=250):
@@ -73,11 +79,17 @@ def recipe_from_llm(ingredients, opts):
     )
     raw = call_hf(prompt, max_tokens=300)
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        # fallback: plain text -> wrap in JSON manually
+        first_brace = raw.find("{")
+        last_brace  = raw.rfind("}")
+        json_blob   = raw[first_brace:last_brace+1]
+        return json.loads(json_blob)
+    except Exception:
+        
         return {
             "title": "AI Recipe",
+            "diet": opts["diet"],
+            "cuisine": opts["cuisine"],
+            "cook_time": opts["cook_time"],
             "ingredients": ingredients,
-            "instructions": raw.split("\n")
+            "instructions": re.split(r"\n\d+\.\s*", raw.strip())[1:],
         }
