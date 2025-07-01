@@ -1,13 +1,13 @@
 from __future__ import annotations  
 
-import openai
+
 import streamlit as st
 from PIL import Image
 from typing import List, Dict
 
 # ---------------- Dummy backend ----------------
 from backend import detect_ingredients, recipe_from_llm
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+#openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 def generate_recipes(img, filters):
      if img is None:

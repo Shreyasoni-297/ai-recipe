@@ -1,19 +1,31 @@
-from openai import OpenAI
-import streamlit as st
 
-#openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-#openai.organization = st.secrets.get("OPENAI_PROJECT") or os.getenv("OPENAI_PROJECT")
-client = OpenAI(
-    api_key  = st.secrets["OPENAI_API_KEY"],
-    project  = st.secrets["OPENAI_PROJECT"],   
-)
-#response = client.models.list()     
+from PIL import Image
+from io import BytesIO
+import base64, json, requests, streamlit as st
 
-#st.write("✅ Success!" if response else "❌ Failed")
+# ---------- YOUR free HF token ----------
+HF_TOKEN = st.secrets["HF_API_KEY"]
+
+HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1" 
+
+def call_hf(prompt: str, max_tokens=250):
+    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7}
+    }
+    r = requests.post(url, headers=headers, json=data, timeout=60)
+    r.raise_for_status()
+    return r.json()[0]["generated_text"]
+
 from torch.serialization import add_safe_globals
 from ultralytics.nn.tasks import DetectionModel
 add_safe_globals([DetectionModel])
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
 
 import torch
 from functools import partial
@@ -36,66 +48,39 @@ model = YOLO("yolov8n.pt")
 
 
 import base64, json, os
-import openai
-from PIL import Image
-from io import BytesIO
+
 
 #openai.api_key =st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
-# ---------- Ingredient detection with GPT-4o Vision ----------
+# -------- Ingredient detection (simple text prompt) --------
 def detect_ingredients(img: Image.Image):
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=85)
-    img_bytes = buf.getvalue()
-
-    b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-
-    vision_prompt = [
-        {
-            "type": "text",
-            "text": 
-                "You are a food AI. List the visible edible ingredients "
-                "you can clearly recognise in this photo (simple nouns, comma-separated)."
-        },
-        {
-            "type": "image_url",
-            "image_url": {"url":f"data:image/jpeg;base64,{b64}"}
-        },
-    ]
-
-    rsp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": vision_prompt}],
-        max_tokens=60,
+    buf = BytesIO(); img.save(buf, format="JPEG", quality=85)
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    prompt = (
+        "You will get a fridge photo in base64. "
+        "List the visible edible ingredients as simple nouns, comma‑separated:\n"
+        f"BASE64:{b64[:4000]}..."  # pass first 4k chars (HF limit)
     )
-
-    raw = rsp.choices[0].message.content.strip()
-
-    line = raw.split(":")[-1] if ":" in raw else raw
+    text = call_hf(prompt, max_tokens=120)
+    line = text.split(":")[-1] if ":" in text else text
     return [x.strip().lower() for x in line.split(",") if x.strip()]
 
-
-SYSTEM = (
-    "You are a chef. Return ONE JSON object with keys: "
-    "title, ingredients (list), instructions (list)."
-)
-
+# -------- Recipe generation --------
 def recipe_from_llm(ingredients, opts):
-    SYSTEM = ("You are a chef. Return ONE JSON with keys: "
-              "title, ingredients(list), instructions(list).")
-
-    user = (
-        f"Ingredients: {', '.join(ingredients)}. "
-        f"Diet: {opts['diet']}. Cuisine: {opts['cuisine']}. "
-        f"Time: {opts['time']}."
+    prompt = (
+        "You are a chef. Return ONE JSON with keys: "
+        "title, ingredients(list), instructions(list).\n\n"
+        f"Ingredients: {', '.join(ingredients)}\n"
+        f"Diet: {opts['diet']}\nCuisine: {opts['cuisine']}\n"
+        f"Time: {opts['cook_time']}\n"
     )
-
-    rsp = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    temperature=0.7,
-    messages=[
-        {"role": "system", "content": SYSTEM},
-        {"role": "user",   "content": user},
-        ],
-    )
-    return json.loads(rsp.choices[0].message.content)
+    raw = call_hf(prompt, max_tokens=300)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # fallback: plain text -> wrap in JSON manually
+        return {
+            "title": "AI Recipe",
+            "ingredients": ingredients,
+            "instructions": raw.split("\n")
+        }
