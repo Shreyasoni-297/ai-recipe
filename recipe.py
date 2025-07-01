@@ -102,6 +102,10 @@ def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
             st.markdown("**Instructions**")
             for j, step in enumerate(steps):
                 st.markdown(f"{j+1}. {step}")
+safe_ings = [ing for ing in ings if len(ing) < 50]  # drop absurdly long tokens
+for ing in safe_ings:
+    st.markdown(f"- {ing}")
+
 
 
 # --------------- Run the app ---------------------

@@ -2,13 +2,11 @@
 from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
+import re
 
 
 
 HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"  
-
-
-# ---------- YOUR free HF token ----------
 HF_TOKEN = st.secrets.get("HF_API_KEY", "")
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
@@ -32,25 +30,6 @@ def call_hf(prompt: str, max_tokens=250):
     r.raise_for_status()
     return r.json()[0]["generated_text"]
 
-#from torch.serialization import add_safe_globals
-#from ultralytics.nn.tasks import DetectionModel
-#add_safe_globals([DetectionModel])
-
-
-#import torch
-from functools import partial
-
-#_orig_load = torch.load
-#def _patched_load(*args, **kwargs):
-    #kwargs.setdefault("weights_only", False)   # force full pickle load
-    #return _orig_load(*args, **kwargs)
-
-#torch.load = _patched_load
-# ---------------------------------------------------------------
-
-#from ultralytics import YOLO
-#model = YOLO("yolov8n.pt")    
-
 
 
 #openai.api_key =st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -67,6 +46,21 @@ def detect_ingredients(img: Image.Image):
     text = call_hf(prompt, max_tokens=120)
     line = text.split(":")[-1] if ":" in text else text
     return [x.strip().lower() for x in line.split(",") if x.strip()]
+
+def call_hf(prompt: str, max_tokens: int = 250):
+    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
+        "options": {"wait_for_model": True}   
+    }
+    r = requests.post(url, headers=headers, json=data, timeout=180)
+    r.raise_for_status()                      
+    return r.json()[0]["generated_text"]
 
 # -------- Recipe generation --------
 def recipe_from_llm(ingredients, opts):
@@ -91,5 +85,5 @@ def recipe_from_llm(ingredients, opts):
             "cuisine": opts["cuisine"],
             "cook_time": opts["cook_time"],
             "ingredients": ingredients,
-            "instructions": re.split(r"\n\d+\.\s*", raw.strip())[1:],
+            "instructions":re.split(r"\n\d+\.\s*", raw.strip())[1:],
         }
