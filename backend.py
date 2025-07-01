@@ -3,10 +3,14 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 
+HF_MODEL = "google/flan-t5-base"            # lightweight, totally free
+
+
 # ---------- YOUR free HF token ----------
 HF_TOKEN = st.secrets["HF_API_KEY"]
 
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1" 
+st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 def call_hf(prompt: str, max_tokens=250):
     url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
@@ -22,32 +26,25 @@ def call_hf(prompt: str, max_tokens=250):
     r.raise_for_status()
     return r.json()[0]["generated_text"]
 
-from torch.serialization import add_safe_globals
-from ultralytics.nn.tasks import DetectionModel
-add_safe_globals([DetectionModel])
+#from torch.serialization import add_safe_globals
+#from ultralytics.nn.tasks import DetectionModel
+#add_safe_globals([DetectionModel])
 
 
-import torch
+#import torch
 from functools import partial
 
-_orig_load = torch.load
-def _patched_load(*args, **kwargs):
-    kwargs.setdefault("weights_only", False)   # force full pickle load
-    return _orig_load(*args, **kwargs)
+#_orig_load = torch.load
+#def _patched_load(*args, **kwargs):
+    #kwargs.setdefault("weights_only", False)   # force full pickle load
+    #return _orig_load(*args, **kwargs)
 
-torch.load = _patched_load
+#torch.load = _patched_load
 # ---------------------------------------------------------------
 
-from ultralytics import YOLO
-model = YOLO("yolov8n.pt")
+#from ultralytics import YOLO
+#model = YOLO("yolov8n.pt")    
 
-
-
-from ultralytics import YOLO
-model = YOLO("yolov8n.pt")         
-
-
-import base64, json, os
 
 
 #openai.api_key =st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
