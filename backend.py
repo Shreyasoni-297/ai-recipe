@@ -5,7 +5,7 @@ import base64, json, requests, streamlit as st
 import re
 
 HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"   
-HF_API_KEY = "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"
+HF_API_KEY = "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"
 #HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
 
 HF_TOKEN = st.secrets.get("HF_API_KEY", "")
