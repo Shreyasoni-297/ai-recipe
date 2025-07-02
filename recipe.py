@@ -8,7 +8,35 @@ import json, re
 
 # ---------------- Dummy backend ----------------
 from backend import detect_ingredients, recipe_from_llm
-#openai.api_key = st.secrets["OPENAI_API_KEY"]
+
+st.set_page_config(
+    page_title="Fridge → Recipe AI",
+    page_icon="🍳",
+    layout="wide",          
+    initial_sidebar_state="collapsed",
+)
+
+# sidebar at top of main()
+
+# ---------- tiny helper to colour the diet tag ----------
+def diet_badge(diet: str) -> str:
+    colors = {
+        "Vegetarian":   "#34c759",   # green
+        "Vegan":        "#0a84ff",   # blue
+        "Keto":         "#ff9f0a",   # orange
+        "Gluten-Free":  "#ff375f",   # pink
+        "Any":          "#8e8e93",   # grey
+    }
+    col = colors.get(diet, "#8e8e93")
+    return (
+        f"<span style='background:{col};color:white;"
+        "border-radius:4px;padding:2px 6px;font-size:0.85rem;'>"
+        f"{diet}</span>"
+    )
+
+
+
+
 
 def generate_recipes(img, filters):
      if img is None:
@@ -33,7 +61,7 @@ def generate_recipes(img, filters):
 
 def main() -> None:
     st.set_page_config(page_title="AI Recipe Generator", page_icon="🍳", layout="centered")
-    st.title("📸🍽️ AI-Powered Recipe Generator")
+    st.title("📸🍽️ Smart Fridge Chef")
 
     uploaded = st.file_uploader("Upload your fridge / pantry photo", type=["jpg", "jpeg", "png"])
     if uploaded:
@@ -83,7 +111,7 @@ def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
         with st.expander(f"🍽️  {title}"):
             c1, c2, c3 = st.columns([2, 1, 1])
             with c1:
-                st.markdown(f"*Diet:* {diet}")
+                st.markdown(f"*Diet:* {diet_badge(diet)}", unsafe_allow_html=True)
                 st.markdown(f"*Cuisine:* {cuisine}")
                 st.markdown(f"*Time:* {ctime}")
             with c2:
@@ -102,10 +130,12 @@ def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
             st.markdown("**Instructions**")
             for j, step in enumerate(steps):
                 st.markdown(f"{j+1}. {step}")
-safe_ings = [ing for ing in ings if len(ing) < 50]  # drop absurdly long tokens
-for ing in safe_ings:
-    st.markdown(f"- {ing}")
-
+    with st.sidebar:
+        st.header("History")
+        for idx, rec in enumerate(st.session_state.get("history", [])):
+            if st.button(f"🔄  {rec['title']}", key=f"hist_{idx}"):
+                show_recipes([rec])
+                st.session_state.setdefault("history", []).extend(recs)   
 
 
 # --------------- Run the app ---------------------
