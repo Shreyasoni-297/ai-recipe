@@ -3,18 +3,19 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 import re
-#HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"   
+from openai import OpenAI
+HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"   
 HF_API_KEY = "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"
-HF_MODEL   = "llava-hf/llava-1.5-7b-hf"
+#HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
 
 HF_TOKEN = st.secrets.get("HF_API_KEY", "")
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
-else:
-    st.write("DEBUG token prefix:", HF_TOKEN[:10])
+#else:S
+ #   st.write("DEBUG token prefix:", HF_TOKEN[:10])
 
 
-st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
+#st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 #TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
 
@@ -28,7 +29,8 @@ def call_hf(prompt: str, max_tokens=250):
     }
     data = {
         "inputs": prompt,
-        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7}
+        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
+        "options":{"wait_for_model": True}
     }
     r = requests.post(url, headers=headers, json=data, timeout=60)
     r.raise_for_status()
@@ -43,29 +45,15 @@ def detect_ingredients(img: Image.Image):
     buf = BytesIO(); img.save(buf, format="JPEG", quality=85)
     b64 = base64.b64encode(buf.getvalue()).decode()
     prompt = (
-        "You are a vision‑food AI. I will give you part of a fridge "
-        "photo encoded in base‑64. **Return ONLY a comma‑separated list "
-        "of the visible edible ingredients – no extra words, no caption.**\n\n"
-        f"PHOTO_BASE64_PART: {b64[:2000]}..."  # send first 2000 chars only
+        "You will get a fridge photo in base64. "
+        "List the visible edible ingredients as simple nouns, comma‑separated:\n"
+        f"BASE64:{b64[:4000]}..."  
     )
     text = call_hf(prompt, max_tokens=120)
     line = text.split(":")[-1] if ":" in text else text
     return [x.strip().lower() for x in line.split(",") if x.strip()]
 
-def call_hf(prompt: str, max_tokens: int = 250):
-    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-    headers = {
-        "Authorization": f"Bearer {HF_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
-        "options": {"wait_for_model": True}   
-    }
-    r = requests.post(url, headers=headers, json=data, timeout=180)
-    r.raise_for_status()                      
-    return r.json()[0]["generated_text"]
+
 
 # -------- Recipe generation --------
 def recipe_from_llm(ingredients, opts):
