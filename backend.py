@@ -4,17 +4,38 @@ from io import BytesIO
 import base64, json, requests, streamlit as st
 import re
 
+TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
+
+def call_together(prompt, model="mistralai/Mistral-7B-Instruct-v0.1", max_tokens=250):
+    url = "https://api.together.xyz/inference"
+    headers = {
+        "Authorization": f"Bearer {TOGETHER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "max_tokens": max_tokens,
+        "temperature": 0.7,
+        "top_p": 0.9
+    }
+
+    response = requests.post(url, headers=headers, json=payload, timeout=60)
+    response.raise_for_status()
+    return response.json()["output"]
+
+
 
 
 HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"  
 HF_TOKEN = st.secrets.get("HF_API_KEY", "")
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
-else:
-    st.write("DEBUG token prefix:", HF_TOKEN[:10])
+#else:
+    #st.write("DEBUG token prefix:", HF_TOKEN[:10])
 
 
-st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
+#st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 def call_hf(prompt: str, max_tokens=250):
     url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
