@@ -16,7 +16,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# sidebar at top of main()
 
 # ---------- tiny helper to colour the diet tag ----------
 def diet_badge(diet: str) -> str:
@@ -61,7 +60,7 @@ def generate_recipes(img, filters):
 
 def main() -> None:
     st.set_page_config(page_title="AI Recipe Generator", page_icon="🍳", layout="centered")
-    st.title(" Smart Fridge Chef")
+    st.title("Smart Fridge Chef")
 
     uploaded = st.file_uploader("Upload your fridge / pantry photo", type=["jpg", "jpeg", "png"])
     if uploaded:
@@ -108,7 +107,7 @@ def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
         ings    = r.get("ingredients", [])
         steps   = r.get("instructions", [])
 
-        with st.expander(f"🍽️  {title}"):
+        with st.expander(f" {title}"):
             c1, c2, c3 = st.columns([2, 1, 1])
             with c1:
                 st.markdown(f"*Diet:* {diet_badge(diet)}", unsafe_allow_html=True)
