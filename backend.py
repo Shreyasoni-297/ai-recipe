@@ -3,21 +3,16 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 
-HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
-HF_TOKEN = st.secrets["HF_API_KEY"]
-HF_MODEL = st.secrets["HF_MODEL"]
-    
-#HF_TOKEN = st.secrets.get("HF_API_KEY", "")
-#HF_API_KEY = "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"
-st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
+HF_MODEL = "HuggingFaceH4/zephyr-7b-alpha"
 
-
+HF_TOKEN = st.secrets.get("HF_API_KEY", "") 
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
-#else:S
- #   st.write("DEBUG token prefix:", HF_TOKEN[:10])
-
-
+else:
+    st.write("DEBUG token prefix:", HF_TOKEN[:10])
+HF_MODEL = st.secrets["HF_MODEL"]
+    
+#st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 
 #TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
