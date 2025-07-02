@@ -3,7 +3,7 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 import re
-from openai import OpenAI
+
 HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"   
 HF_API_KEY = "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"
 #HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
