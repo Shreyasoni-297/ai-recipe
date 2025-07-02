@@ -3,7 +3,10 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 import re
-HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"   
+#HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"   
+HF_API_KEY = "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"
+HF_MODEL   = "llava-hf/llava-1.5-7b-hf"
+
 HF_TOKEN = st.secrets.get("HF_API_KEY", "")
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
@@ -13,29 +16,8 @@ else:
 
 st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
-TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
+#TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
 
-def call_together(prompt, model="HuggingFaceH4/zephyr-7b-beta", max_tokens=250):
-    url = "https://api.together.xyz/inference"
-    headers = {
-        "Authorization": f"Bearer {TOGETHER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "max_tokens": max_tokens,
-        "temperature": 0.7,
-        "top_p": 0.9
-    }
-
-    response = requests.post(url, headers=headers, json=payload, timeout=60)
-    response.raise_for_status()
-    return response.json()["output"]
-
-
-
- 
 
 
 def call_hf(prompt: str, max_tokens=250):
@@ -61,9 +43,10 @@ def detect_ingredients(img: Image.Image):
     buf = BytesIO(); img.save(buf, format="JPEG", quality=85)
     b64 = base64.b64encode(buf.getvalue()).decode()
     prompt = (
-        "You will get a fridge photo in base64. "
-        "List the visible edible ingredients as simple nouns, comma‑separated:\n"
-        f"BASE64:{b64[:4000]}..."  # pass first 4k chars (HF limit)
+        "You are a vision‑food AI. I will give you part of a fridge "
+        "photo encoded in base‑64. **Return ONLY a comma‑separated list "
+        "of the visible edible ingredients – no extra words, no caption.**\n\n"
+        f"PHOTO_BASE64_PART: {b64[:2000]}..."  # send first 2000 chars only
     )
     text = call_hf(prompt, max_tokens=120)
     line = text.split(":")[-1] if ":" in text else text
@@ -94,6 +77,7 @@ def recipe_from_llm(ingredients, opts):
         f"Time: {opts['cook_time']}\n"
     )
     raw = call_hf(prompt, max_tokens=300)
+    start, end = raw.find("{"), raw.rfind("}")
     try:
         first_brace = raw.find("{")
         last_brace  = raw.rfind("}")
@@ -107,5 +91,5 @@ def recipe_from_llm(ingredients, opts):
             "cuisine": opts["cuisine"],
             "cook_time": opts["cook_time"],
             "ingredients": ingredients,
-            "instructions":re.split(r"\n\d+\.\s*", raw.strip())[1:],
+            "instructions": [raw.strip()]
         }

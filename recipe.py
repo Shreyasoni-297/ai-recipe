@@ -61,7 +61,7 @@ def generate_recipes(img, filters):
 
 def main() -> None:
     st.set_page_config(page_title="AI Recipe Generator", page_icon="🍳", layout="centered")
-    st.title("📸🍽️ Smart Fridge Chef")
+    st.title(" Smart Fridge Chef")
 
     uploaded = st.file_uploader("Upload your fridge / pantry photo", type=["jpg", "jpeg", "png"])
     if uploaded:
@@ -78,7 +78,7 @@ def main() -> None:
             cook_time = st.selectbox("Cook time", ["Any", "<15 min", "<30 min", "<45 min", "1 hour+"])
 
         if st.button("Generate Recipes", type="primary"):
-            with st.spinner("Chef-bot is thinking…"):
+            with st.spinner("Generating your recipe…"):
                 recs = generate_recipes(img, {"diet": diet, "cuisine": cuisine, "cook_time": cook_time})
 
             if not recs:
