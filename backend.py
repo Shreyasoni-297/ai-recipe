@@ -2,14 +2,14 @@
 from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
-import re
 
+#HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
 HF_TOKEN = st.secrets["HF_API_KEY"]
 HF_MODEL = st.secrets["HF_MODEL"]
-#HF_MODEL = "llava-hf/llava-1.5-7b-hf"    
+    
 #HF_TOKEN = st.secrets.get("HF_API_KEY", "")
-HF_API_KEY = "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"
-HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
+#HF_API_KEY = "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"
+
 
 
 if not HF_TOKEN:
