@@ -1,21 +1,20 @@
 
 from PIL import Image
 from io import BytesIO
-import base64, json, requests, streamlit as st
+import base64, json, requests,re, streamlit as st
 
-HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
-
+HF_MODEL = "Salesforce/blip-image-captioning-base"   # open, no gating
 HF_TOKEN = st.secrets["HF_API_KEY"]  
+st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
 #else:
     #st.write("DEBUG token prefix:", HF_TOKEN[:10])
 HF_MODEL = st.secrets["HF_MODEL"]
     
-st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 
-#TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
+
 
 def call_hf(prompt: str, max_tokens=250):
     url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
@@ -55,16 +54,19 @@ def recipe_from_llm(ingredients, opts):
     )
     raw = call_hf(prompt, max_tokens=300)
     try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        # fallback: plain text -> wrap in JSON manually
+        first_brace = raw.find("{")
+        last_brace  = raw.rfind("}")
+        json_blob   = raw[first_brace:last_brace+1]
+        return json.loads(json_blob)
+    except Exception:
+        # Fallback: wrap plaintext into minimal dict
         return {
             "title": "AI Recipe",
-            "ingredients": ingredients,
             "diet": opts["diet"],
             "cuisine": opts["cuisine"],
             "cook_time": opts["cook_time"],
-            "instructions": raw.split("\n")
+            "ingredients": ingredients,
+            "instructions": re.split(r"\n\d+\.\s*", raw.strip())[1:],
         }
 
 
