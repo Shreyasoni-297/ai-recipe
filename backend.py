@@ -57,6 +57,20 @@ def call_hf(prompt: str, max_tokens=250):
 
 # -------- Ingredient detection (simple text prompt) --------
 def detect_ingredients(img: Image.Image):
+    image_bytes = img.read()
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}"
+    }
+    response = requests.post(
+        "https://api-inference.huggingface.co/models/your-image-detection-model",
+        headers=headers,
+        files={"file": image_bytes}
+    )
+    response.raise_for_status()
+    result = response.json()
+
+    # parse result into list of ingredients
+    return result["ingredients"]
     buf = BytesIO(); img.save(buf, format="JPEG", quality=85)
     b64 = base64.b64encode(buf.getvalue()).decode()
     prompt = (
@@ -85,6 +99,7 @@ def call_hf(prompt: str, max_tokens: int = 250):
 
 # -------- Recipe generation --------
 def recipe_from_llm(ingredients, opts):
+    
     prompt = (
         "You are a chef. Return ONE JSON with keys: "
         "title, ingredients(list), instructions(list).\n\n"
