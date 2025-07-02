@@ -3,17 +3,10 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests,re, streamlit as st
 
-HF_MODEL = "Salesforce/blip-image-captioning-base"   # open, no gating
+#HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
 HF_TOKEN = st.secrets["HF_API_KEY"]  
-st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
-if not HF_TOKEN:
-    st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
-#else:
-    #st.write("DEBUG token prefix:", HF_TOKEN[:10])
 HF_MODEL = st.secrets["HF_MODEL"]
-    
-
-
+st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
 
 
 def call_hf(prompt: str, max_tokens=250):
@@ -26,9 +19,14 @@ def call_hf(prompt: str, max_tokens=250):
         "inputs": prompt,
         "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7}
     }
-    r = requests.post(url, headers=headers, json=data, timeout=60)
-    r.raise_for_status()
-    return r.json()[0]["generated_text"]
+    try:
+        r = requests.post(url, headers=headers, json=data, timeout=60)
+        r.raise_for_status()
+        return r.json()[0]["generated_text"]
+    except requests.exceptions.ReadTimeout:
+        return "⚠️ Hugging Face API timed out. Please try again later."
+    except Exception as e:
+        return f"⚠️ Error: {str(e)}"
 
 # -------- Ingredient detection (simple text prompt) --------
 def detect_ingredients(img: Image.Image):
