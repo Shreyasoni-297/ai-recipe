@@ -3,13 +3,13 @@ from PIL import Image
 from io import BytesIO
 import base64, json, requests, streamlit as st
 
-HF_MODEL = "HuggingFaceH4/zephyr-7b-alpha"
+HF_MODEL = st.secrets["HF_MODEL"]
 
-HF_TOKEN = st.secrets.get("HF_API_KEY", "") 
+HF_TOKEN = st.secrets["HF_API_KEY"]  
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
-else:
-    st.write("DEBUG token prefix:", HF_TOKEN[:10])
+#else:
+    #st.write("DEBUG token prefix:", HF_TOKEN[:10])
 HF_MODEL = st.secrets["HF_MODEL"]
     
 #st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
@@ -76,9 +76,52 @@ def detect_ingredients(img: Image.Image):
 
 
 
+TG_TOKEN = st.secrets["TOGETHER_API_KEY"]
+TG_MODEL = st.secrets["TOGETHER_MODEL"]
 
-# -------- Recipe generation --------
+def call_together(prompt: str, max_tokens=300):
+    r = requests.post(
+        "https://api.together.xyz/inference",
+        headers={
+            "Authorization": f"Bearer {TG_TOKEN}",
+            "Content-Type":  "application/json",
+        },
+        json={
+            "model": TG_MODEL,
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "temperature": 0.7,
+            "top_p": 0.9
+        },
+        timeout=60
+    )
+    r.raise_for_status()
+    return r.json()["output"]
+
 def recipe_from_llm(ingredients, opts):
+    prompt = (
+        "Return ONE JSON with keys title, diet, cuisine, cook_time, "
+        "ingredients (list), instructions (list).\n\n"
+        f"Ingredients: {', '.join(ingredients)}\n"
+        f"Diet: {opts['diet']}\nCuisine: {opts['cuisine']}\n"
+        f"Cook time: {opts['cook_time']}"
+    )
+    raw = call_together(prompt)
+    # try to extract JSON blob
+    start, end = raw.find("{"), raw.rfind("}")
+    try:
+        return json.loads(raw[start:end+1])
+    except Exception:
+        return {
+            "title": "AI Recipe",
+            "diet": opts["diet"],
+            "cuisine": opts["cuisine"],
+            "cook_time": opts["cook_time"],
+            "ingredients": ingredients,
+            "instructions": [raw.strip()],
+        }
+# -------- Recipe generation --------
+#def recipe_from_llm(ingredients, opts):
     prompt = (
         "You are a chef. Return ONE JSON with keys: "
         "title, ingredients(list), instructions(list).\n\n"
