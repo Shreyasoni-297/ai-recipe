@@ -4,7 +4,7 @@ from io import BytesIO
 import base64, json, requests,re, streamlit as st
 
 HF_TOKEN = st.secrets.get("HF_API_KEY", "")  
-HF_MODEL = st.secrets.get("HF_MODEL", "HuggingFaceH4/zephyr-7b-beta")
+HF_MODEL = st.secrets.get("HF_MODEL","google/flan-t5-base")
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
 if not HF_TOKEN:
@@ -22,7 +22,8 @@ def call_hf(prompt: str, max_tokens=250):
     }
     data = {
         "inputs": prompt,
-        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7}
+        "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
+        "options": {"wait_for_model": True}
     }
     r = requests.post(url, headers=headers, json=data, timeout=60)
     r.raise_for_status()
