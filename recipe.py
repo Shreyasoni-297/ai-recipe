@@ -10,6 +10,7 @@ from typing import List, Dict
 from backend import detect_ingredients, recipe_from_llm
 
 
+
 # ---------- Generate one or more recipes ----------
 def generate_recipes(img: Image.Image, filters: Dict) -> List[Dict]:
     if img is None:
