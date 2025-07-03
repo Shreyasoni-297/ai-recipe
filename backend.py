@@ -4,10 +4,11 @@ from io import BytesIO
 import base64, json, requests,re, streamlit as st
 
 #HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
-HF_TOKEN = st.secrets["HF_API_KEY"]  
-HF_MODEL = st.secrets["HF_MODEL"]
-st.write("DEBUG token prefix:", st.secrets.get("HF_API_KEY", "")[:6])
-
+HF_TOKEN = st.secrets.get("HF_API_KEY", "")  
+HF_MODEL = st.secrets.get("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.1")
+if st.runtime.exists():          
+    st.write("🛠️  Using HF model:", HF_MODEL[:40])
+    st.write("DEBUG token prefix:", HF_TOKEN[:6])
 
 def call_hf(prompt: str, max_tokens=250):
     url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
@@ -33,11 +34,16 @@ def detect_ingredients(img: Image.Image):
     buf = BytesIO(); img.save(buf, format="JPEG", quality=85)
     b64 = base64.b64encode(buf.getvalue()).decode()
     prompt = (
-        "You will get a fridge photo in base64. "
-        "List the visible edible ingredients as simple nouns, comma‑separated:\n"
-        f"BASE64:{b64[:4000]}..."  # pass first 4k chars (HF limit)
+        "You are a vision-food AI. I will give you part of a fridge "
+        "photo encoded in base-64. **Return ONLY a comma‑separated list "
+        "of the visible edible ingredients - no extra words, no caption.**\n\n"
+        f"PHOTO_BASE64_PART: {b64[:2000]}..."  # pass first 4k chars (HF limit)
     )
+    
     text = call_hf(prompt, max_tokens=120)
+    if "error" in text.lower():
+        raise Exception(f"Bad HF response: {text}")
+
     line = text.split(":")[-1] if ":" in text else text
     return [x.strip().lower() for x in line.split(",") if x.strip()]
 
