@@ -1,12 +1,16 @@
-
+from openai import OpenAI
 from PIL import Image
 from io import BytesIO
 import base64, json, requests,re, streamlit as st
 
-HF_TOKEN = st.secrets.get("HF_API_KEY", "")  
-HF_MODEL = st.secrets.get("HF_MODEL","google/flan-t5-base")
+#HF_TOKEN = st.secrets["HF_API_KEY"]  
+HF_TOKEN = st.secrets.get("HF_API_KEY", "")
+HF_MODEL= "google/flan-t5-base"
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
+API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+
+
 if not HF_TOKEN:
     st.error("❌ HF_API_KEY missing in Secrets. Add it in Settings → Secrets.")
 else:
@@ -36,7 +40,7 @@ def detect_ingredients(img: Image.Image):
     b64 = base64.b64encode(buf.getvalue()).decode()
     prompt = (
         "You are a vision-food AI. I will give you part of a fridge "
-        "photo encoded in base-64. **Return ONLY a comma‑separated list "
+        "photo encoded in base-64. **Return ONLY a comma-separated list "
         "of the visible edible ingredients - no extra words, no caption.**\n\n"
         f"PHOTO_BASE64_PART: {b64[:2000]}..."  # pass first 4k chars (HF limit)
     )
@@ -51,12 +55,22 @@ def detect_ingredients(img: Image.Image):
 # -------- Recipe generation --------
 def recipe_from_llm(ingredients, opts):
     prompt = (
-        "You are a chef. Return ONE JSON with keys: "
+        f"You are a chef. Return ONE JSON with keys: "
         "title, ingredients(list), instructions(list).\n\n"
         f"Ingredients: {', '.join(ingredients)}\n"
         f"Diet: {opts['diet']}\nCuisine: {opts['cuisine']}\n"
         f"Time: {opts['cook_time']}\n"
     )
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "inputs": prompt,
+        "parameters": {"temperature": 0.7, "max_new_tokens": 250}
+    }
+  
    
     raw = call_hf(prompt, max_tokens=300)
     try:
