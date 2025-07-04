@@ -8,7 +8,7 @@ HF_MODEL = st.secrets["HF_MODEL"]
 
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
-API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+#API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 
 
 if not HF_TOKEN:
