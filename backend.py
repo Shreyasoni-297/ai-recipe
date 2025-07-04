@@ -4,7 +4,8 @@ import base64, json, requests,re, streamlit as st
 
 
 HF_TOKEN = st.secrets["HF_API_KEY"]
-HF_MODEL = "Salesforce/blip-image-captioning-base"
+HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
+
 
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
@@ -46,14 +47,6 @@ def detect_ingredients(img: Image.Image):
         f"PHOTO_BASE64_PART: {b64[:2000]}..."  # pass first 4k chars (HF limit)
     )
     url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    res = requests.post(
-        url,
-        headers=headers,
-        files={"image": img_bytes},
-        json={"parameters": {"max_new_tokens": 60}, "options": {"wait_for_model": True}},
-        timeout=120,
-    )
     
     text = call_hf(prompt, max_tokens=120)
     if "error" in text.lower():
@@ -75,10 +68,9 @@ def recipe_from_llm(ingredients, opts):
         "Authorization": f"Bearer {HF_TOKEN}",
         "Content-Type": "application/json"
     }
-
     data = {
-        "inputs": prompt,
-        "parameters": {"temperature": 0.7, "max_new_tokens": 250}
+    "inputs": prompt,
+    "parameters": {"temperature": 0.7, "max_new_tokens": 250}
     }
   
    
