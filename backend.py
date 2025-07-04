@@ -4,12 +4,12 @@ import base64, json, requests,re, streamlit as st
 
 
 HF_TOKEN = st.secrets["HF_API_KEY"]
-HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
+HF_MODEL = "https://huggingface.co/tiiuae/falcon-7b-instruct"
 
 
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
-#API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 
 
 if not HF_TOKEN:
