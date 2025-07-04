@@ -8,7 +8,7 @@ from typing import List, Dict
 #  Import your backend helpers (using Hugging Face)
 # --------------------------------------------------
 from backend import detect_ingredients, recipe_from_llm
-
+HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
 API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 
 
