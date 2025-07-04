@@ -19,7 +19,7 @@ else:
 
 
 def call_hf(prompt: str, max_tokens=250):
-    url = f"https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta/"
+    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}",
         "Content-Type": "application/json"
