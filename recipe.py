@@ -7,8 +7,9 @@ from typing import List, Dict
 # --------------------------------------------------
 #  Import your backend helpers (using Hugging Face)
 # --------------------------------------------------
-from backend import detect_ingredients,recipe_from_llm
+from backend import detect_ingredients, recipe_from_llm
 
+API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 
 
 # ---------- Generate one or more recipes ----------
