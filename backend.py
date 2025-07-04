@@ -4,7 +4,7 @@ import base64, json, requests,re, streamlit as st
 
 
 HF_TOKEN = st.secrets["HF_API_KEY"]
-HF_MODEL = " https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1"
+HF_MODEL = "microsoft/git-base"
 
 
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
