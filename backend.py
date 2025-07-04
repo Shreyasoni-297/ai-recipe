@@ -1,11 +1,11 @@
-from openai import OpenAI
 from PIL import Image
 from io import BytesIO
 import base64, json, requests,re, streamlit as st
 
-#HF_TOKEN = st.secrets["HF_API_KEY"]  
-HF_TOKEN = st.secrets.get("HF_API_KEY", "")
-HF_MODEL= "google/flan-t5-base"
+
+HF_TOKEN = st.secrets["HF_API_KEY"]
+HF_MODEL = st.secrets["HF_MODEL"]
+
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
 API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
@@ -29,7 +29,7 @@ def call_hf(prompt: str, max_tokens=250):
         "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
         "options": {"wait_for_model": True}
     }
-    r = requests.post(url, headers=headers, json=data, timeout=60)
+    r = requests.post(url, headers=headers, json=data, timeout=180)
     r.raise_for_status()
     return r.json()[0]["generated_text"]
 
