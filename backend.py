@@ -4,7 +4,7 @@ import base64, json, requests,re, streamlit as st
 
 
 HF_TOKEN = st.secrets["HF_API_KEY"]
-HF_MODEL = "https://huggingface.co/tiiuae/falcon-7b-instruct"
+HF_MODEL = " https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1"
 
 
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
