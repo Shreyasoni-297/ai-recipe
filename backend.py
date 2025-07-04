@@ -4,7 +4,7 @@ import base64, json, requests,re, streamlit as st
 
 
 HF_TOKEN = st.secrets["HF_API_KEY"]
-HF_MODEL = st.secrets["HF_MODEL"]
+HF_MODEL = "Salesforce/blip-image-captioning-base"
 
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}",
            "Content-Type": "application/json"}
@@ -36,13 +36,23 @@ def call_hf(prompt: str, max_tokens=250):
 
 # -------- Ingredient detection (simple text prompt) --------
 def detect_ingredients(img: Image.Image):
-    buf = BytesIO(); img.save(buf, format="JPEG", quality=85)
+    buf = BytesIO(); img.save(buf, format="JPEG", quality=85);
+    img_bytes = buf.getvalue()
     b64 = base64.b64encode(buf.getvalue()).decode()
     prompt = (
         "You are a vision-food AI. I will give you part of a fridge "
         "photo encoded in base-64. **Return ONLY a comma-separated list "
         "of the visible edible ingredients - no extra words, no caption.**\n\n"
         f"PHOTO_BASE64_PART: {b64[:2000]}..."  # pass first 4k chars (HF limit)
+    )
+    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    res = requests.post(
+        url,
+        headers=headers,
+        files={"image": img_bytes},
+        json={"parameters": {"max_new_tokens": 60}, "options": {"wait_for_model": True}},
+        timeout=120,
     )
     
     text = call_hf(prompt, max_tokens=120)
