@@ -1,77 +1,82 @@
-from __future__ import annotations
 
+from __future__ import annotations
 import streamlit as st
 from PIL import Image
-from typing import List, Dict
+from typing import Dict, List
 
-# --------------------------------------------------
-#  Import your backend helpers (using Hugging Face)
-# --------------------------------------------------
-from backend import detect_ingredients, recipe_from_llm
-HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
-API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+# ---------------- Dummy backend ----------------
+def generate_recipes(img: Image.Image, filters: Dict[str, str]) -> List[Dict]:
+    """Return hard-coded recipes; swap with real model later."""
+    return [
+        {
+            "title": "Cheesy Veg Sandwich",
+            "diet": filters["diet"],
+            "cuisine": filters["cuisine"],
+            "cook_time": filters["cook_time"],
+            "ingredients": [
+                "2 bread slices",
+                "1 slice cheese",
+                "Chopped tomato",
+                "Chopped onion",
+                "Butter",
+            ],
+            "instructions": [
+                "Spread butter on bread.",
+                "Add cheese and veggies.",
+                "Grill or toast till golden.",
+                "Serve hot with ketchup.",
+            ],
+        },
+        {
+            "title": "Quick Egg Fried Rice",
+            "diet": filters["diet"],
+            "cuisine": "Chinese",
+            "cook_time": "<30 min",
+            "ingredients": [
+                "1 cup cooked rice",
+                "2 eggs",
+                "Soy sauce",
+                "Chopped spring onion",
+                "Salt & pepper",
+            ],
+            "instructions": [
+                "Scramble eggs in a pan.",
+                "Add rice and soy sauce.",
+                "Mix well with veggies.",
+                "Garnish with spring onion.",
+            ],
+        },
+    ]
 
-
-# ---------- Generate one or more recipes ----------
-def generate_recipes(img: Image.Image, filters: Dict) -> List[Dict]:
-    if img is None:
-        st.error("❌ Image not found. Please upload a valid image.")
-        return []
-
-    # 1) Ingredient detection
-    try:
-        ingredients = detect_ingredients(img)
-        st.info(f"✅ Detected ingredients: {ingredients}")
-    except Exception as e:
-        st.error(f"⚠️ Ingredient detection failed: {e}")
-        return []
-
-    # 2) Recipe generation
-    try:
-        recipe = recipe_from_llm(ingredients, filters)
-        return [recipe] if recipe else []
-    except Exception as e:
-        st.error(f"⚠️ Recipe generation failed: {e}")
-        return []
-
-
-# ----------------------- UI -----------------------
+# ---------------- UI ----------------
 def main() -> None:
     st.set_page_config(page_title="AI Recipe Generator", page_icon="🍳", layout="centered")
-    st.title(" Smart AI chef")
+    st.title("📸🍽️ AI-Powered Recipe Generator")
 
     uploaded = st.file_uploader("Upload your fridge / pantry photo", type=["jpg", "jpeg", "png"])
-
     if uploaded:
         img = Image.open(uploaded)
-        st.image(img, caption="Uploaded image", use_container_width=True)
+        st.image(img, caption="Uploaded image", use_column_width=True)
 
         st.subheader("Filters")
         col1, col2, col3 = st.columns(3)
         with col1:
-            diet = st.selectbox("Diet", ["Any", "Vegetarian", "Vegan", "Keto",
-                                         "Pescatarian", "Gluten‑Free"])
+            diet = st.selectbox("Diet", ["Any", "Vegetarian", "Vegan", "Keto", "Pescatarian", "Gluten-Free"])
         with col2:
-            cuisine = st.selectbox("Cuisine", ["Any", "Indian", "Italian", "Mexican",
-                                               "Chinese", "Mediterranean"])
+            cuisine = st.selectbox("Cuisine", ["Any", "Indian", "Italian", "Mexican", "Chinese", "Mediterranean"])
         with col3:
-            cook_time = st.selectbox("Cook time", ["Any", "<15 min", "<30 min",
-                                                   "<45 min", "1 hour+"])
+            cook_time = st.selectbox("Cook time", ["Any", "<15 min", "<30 min", "<45 min", "1 hour+"])
 
         if st.button("Generate Recipes", type="primary"):
-            with st.spinner("Generating your recipe…"):
-                recs = generate_recipes(
-                    img,
-                    {"diet": diet, "cuisine": cuisine, "cook_time": cook_time},
-                )
+            with st.spinner("Chef-bot is thinking…"):
+                recs = generate_recipes(img, {"diet": diet, "cuisine": cuisine, "cook_time": cook_time})
 
             if not recs:
                 st.warning("No recipes found — try relaxing a filter.")
             else:
-                st.success(f"{len(recs)} recipe{'s' if len(recs) > 1 else ''} found!")
+                st.success(f"{len(recs)} recipe{'s' if len(recs)>1 else ''} found!")
                 show_recipes(recs)
 
-        # Saved favourites
         if st.session_state.get("favourites"):
             st.divider()
             st.subheader("⭐ Saved favourites")
@@ -79,72 +84,26 @@ def main() -> None:
     else:
         st.info("👆 Upload an image to start.")
 
-
-# ------------- Render recipe cards ---------------
 def show_recipes(recs: List[Dict], favourite: bool = False) -> None:
     for i, r in enumerate(recs):
-        # --- Safe defaults in case keys are missing ---
-        if not isinstance(r, dict):
-            st.warning(f"Unexpected recipe format: {r}")
-            continue
-
-        title   = r.get("title",  "Untitled Recipe")
-        diet    = r.get("diet",   "Any")
-        cuisine = r.get("cuisine", "Any")
-        ctime   = r.get("cook_time", "Unknown")
-        ings    = r.get("ingredients", [])
-        steps   = r.get("instructions", [])
-
-        with st.expander(f"🍽️  {title}"):
+        with st.expander(f"🍽️  {r['title']}"):
             c1, c2, c3 = st.columns([2, 1, 1])
             with c1:
-                st.markdown(f"*Diet:* {diet}")
-                st.markdown(f"*Cuisine:* {cuisine}")
-                st.markdown(f"*Time:* {ctime}")
+                st.markdown(f"**Diet:** {r['diet']}")
+                st.markdown(f"**Cuisine:** {r['cuisine']}")
+                st.markdown(f"**Time:** {r['cook_time']}")
             with c2:
-                rating = st.slider("Rate", 1, 5, 3,
-                                   key=f"rating_{i}_{favourite}")
-                st.session_state.setdefault("ratings", {})[title] = rating
+                rating = st.slider("Rate", 1, 5, 3, key=f"rating_{i}_{favourite}")
+                st.session_state.setdefault("ratings", {})[r["title"]] = rating
             with c3:
                 fav_key = f"fav_{i}_{favourite}"
-                if st.checkbox("❤️ Save", key=fav_key):
+                if st.checkbox("❤️ Save", key=fav_key):
                     st.session_state.setdefault("favourites", []).append(r)
 
             st.markdown("**Ingredients**")
-            for ing in ings:
-                st.markdown(f"- {ing}")
-
+            st.markdown("\n".join(f"- {ing}" for ing in r["ingredients"]))
             st.markdown("**Instructions**")
-            for j, step in enumerate(steps):
-                st.markdown(f"{j+1}. {step}")
+            st.markdown("\n".join(f"{j+1}. {step}" for j, step in enumerate(r["instructions"])))
 
-
-# --------------- Run the app ---------------------
 if __name__ == "__main__":
     main()
-
-
-# ---------- tiny helper to colour the diet tag ----------
-def diet_badge(diet: str) -> str:
-    colors = {
-        "Vegetarian":   "#34c759",   # green
-        "Vegan":        "#0a84ff",   # blue
-        "Keto":         "#ff9f0a",   # orange
-        "Gluten-Free":  "#ff375f",   # pink
-        "Any":          "#8e8e93",   # grey
-    }
-    col = colors.get(diet, "#8e8e93")
-    return (
-        f"<span style='background:{col};color:white;"
-        "border-radius:4px;padding:2px 6px;font-size:0.85rem;'>"
-        f"{diet}</span>"
-    )
-
-
-with st.sidebar:
-        st.header("History")
-        for idx, rec in enumerate(st.session_state.get("history", [])):
-            if st.button(f"🔄  {rec['title']}", key=f"hist_{idx}"):
-                show_recipes([rec])
-                st.session_state.setdefault("history", []).extend(rec)   
-
