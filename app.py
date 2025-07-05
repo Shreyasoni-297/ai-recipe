@@ -35,7 +35,8 @@ from __future__ import annotations
 import streamlit as st
 from PIL import Image
 from typing import Dict, List
-
+st.markdown("<h1 style='text-align: center; color: #F63366;'>👨‍🍳 AI Recipe Chef</h1>",unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Upload a food image and get a personalized recipe with filters!</p>", unsafe_allow_html=True)
 
 
 # ---------------- Dummy backend ----------------
@@ -84,8 +85,7 @@ def generate_recipes(img: Image.Image, filters: Dict[str, str]) -> List[Dict]:
 
 # ---------------- UI ----------------
 def main() -> None:
-    st.markdown("<h1 style='text-align: center; color: #F63366;'>👨‍🍳 AI Recipe Chef</h1>",unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Upload a food image and get a personalized recipe with filters!</p>", unsafe_allow_html=True)
+    
     #st.set_page_config(page_title="AI Recipe Generator", page_icon="🍳", layout="centered")
     #st.title("📸🍽️ AI-Powered Recipe Generator")
 
